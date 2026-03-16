@@ -100,7 +100,7 @@ function PaymentModal({ cart, total, onClose, onPaymentSuccess }) {
       <body>
 
       <div class="center">
-        <strong>YOUR SHOP NAME</strong><br/>
+        <strong>SLV Supermarket-9514058388</strong><br/>
         ${new Date().toLocaleString()}
       </div>
 

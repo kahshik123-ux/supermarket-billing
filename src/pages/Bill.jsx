@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
 import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import PaymentModal from "../components/PaymentModal";
@@ -10,7 +10,11 @@ function Bill() {
   const [cart, setCart] = useState([]);
   const [showPayment, setShowPayment] = useState(false);
 
-  // ✅ FETCH PRODUCTS WITH ID + STOCK
+  // ✅ Barcode states
+  const [barcodeInput, setBarcodeInput] = useState("");
+  const barcodeRef = useRef(null);
+
+  // ✅ FETCH PRODUCTS
   useEffect(() => {
     const fetchProducts = async () => {
       const snapshot = await getDocs(collection(db, "products"));
@@ -58,6 +62,22 @@ function Bill() {
     setFiltered([]);
   };
 
+  // ✅ Barcode auto add
+  const handleBarcodeScan = (code) => {
+    if (!code) return;
+
+    const product = products.find(
+      p => p.barcode?.toString() === code.toString()
+    );
+
+    if (!product) {
+      alert("Product not found!");
+      return;
+    }
+
+    addToCart(product);
+  };
+
   // ➕ INCREASE QTY
   const increaseQty = (id) => {
     setCart(cart.map(item =>
@@ -93,6 +113,27 @@ function Bill() {
 
   return (
     <div style={styles.page}>
+
+      {/* ✅ Hidden Barcode Input (NO auto focus) */}
+      <input
+        ref={barcodeRef}
+        type="text"
+        value={barcodeInput}
+        onChange={(e) => setBarcodeInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            handleBarcodeScan(barcodeInput);
+            setBarcodeInput("");
+          }
+        }}
+        style={{
+          position: "absolute",
+          opacity: 0,
+          height: 0,
+          pointerEvents: "none"
+        }}
+      />
+
       <div style={styles.header}>
         <h2>Billing System</h2>
       </div>
@@ -217,8 +258,6 @@ function Bill() {
           total={total}
           onClose={() => setShowPayment(false)}
           onPaymentSuccess={async () => {
-
-            // 🔥 REDUCE STOCK HERE
             for (const item of cart) {
               const newStock = item.stock - item.quantity;
 
@@ -227,9 +266,9 @@ function Bill() {
               });
             }
 
-            setCart([]);        // Clear cart
-            setShowPayment(false); // Close modal
-            setSearch("");      // Reset search
+            setCart([]);
+            setShowPayment(false);
+            setSearch("");
           }}
         />
       )}
