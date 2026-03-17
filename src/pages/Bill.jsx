@@ -10,11 +10,11 @@ function Bill() {
   const [cart, setCart] = useState([]);
   const [showPayment, setShowPayment] = useState(false);
 
-  // Barcode states
-  const [barcodeInput, setBarcodeInput] = useState("");
-  const barcodeRef = useRef(null);
+  // 🔥 SCANNER BUFFER (Professional POS Method)
+  const scanBuffer = useRef("");
+  const scanTimeout = useRef(null);
 
-  // Fetch products
+  // FETCH PRODUCTS
   useEffect(() => {
     const fetchProducts = async () => {
       const snapshot = await getDocs(collection(db, "products"));
@@ -27,23 +27,36 @@ function Bill() {
     fetchProducts();
   }, []);
 
-  // 🔥 Auto focus barcode input always
+  // 🔥 GLOBAL BARCODE LISTENER (NO FOCUS NEEDED)
   useEffect(() => {
-    if (barcodeRef.current) {
-      barcodeRef.current.focus();
-    }
+    const handleKeyDown = (e) => {
+      // Ignore manual typing inside search input
+      if (document.activeElement.tagName === "INPUT") return;
 
-    const handleClick = () => {
-      if (barcodeRef.current) {
-        barcodeRef.current.focus();
+      if (scanTimeout.current) {
+        clearTimeout(scanTimeout.current);
       }
+
+      if (e.key === "Enter") {
+        if (scanBuffer.current.length > 0) {
+          handleBarcodeScan(scanBuffer.current);
+          scanBuffer.current = "";
+        }
+        return;
+      }
+
+      scanBuffer.current += e.key;
+
+      scanTimeout.current = setTimeout(() => {
+        scanBuffer.current = "";
+      }, 100);
     };
 
-    window.addEventListener("click", handleClick);
-    return () => window.removeEventListener("click", handleClick);
-  }, []);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [products, cart]);
 
-  // Live search
+  // LIVE SEARCH
   useEffect(() => {
     if (!search.trim()) {
       setFiltered([]);
@@ -60,7 +73,7 @@ function Bill() {
     setFiltered(result.slice(0, 6));
   }, [search, products]);
 
-  // Add to cart
+  // ADD TO CART
   const addToCart = (product) => {
     const existing = cart.find(item => item.id === product.id);
 
@@ -78,7 +91,7 @@ function Bill() {
     setFiltered([]);
   };
 
-  // Barcode auto add
+  // BARCODE AUTO ADD
   const handleBarcodeScan = (code) => {
     if (!code) return;
 
@@ -126,36 +139,11 @@ function Bill() {
   return (
     <div style={styles.page}>
 
-      {/* Hidden Barcode Input */}
-      <input
-        ref={barcodeRef}
-        type="text"
-        value={barcodeInput}
-        onChange={(e) => setBarcodeInput(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            handleBarcodeScan(barcodeInput);
-            setBarcodeInput("");
-
-            // Re-focus after every scan
-            setTimeout(() => {
-              if (barcodeRef.current) {
-                barcodeRef.current.focus();
-              }
-            }, 30);
-          }
-        }}
-        style={{
-          position: "absolute",
-          opacity: 0,
-          height: 0
-        }}
-      />
-
       <div style={styles.header}>
         <h2>Billing System</h2>
       </div>
 
+      {/* SEARCH */}
       <div style={styles.searchSection}>
         <input
           type="text"
@@ -180,6 +168,7 @@ function Bill() {
         )}
       </div>
 
+      {/* TABLE */}
       <div style={styles.tableContainer}>
         <table style={styles.table}>
           <thead style={styles.thead}>
@@ -209,13 +198,19 @@ function Bill() {
 
                   <td>
                     <div style={styles.qtyBox}>
-                      <button style={styles.qtyBtn} onClick={() => decreaseQty(item.id)}>
+                      <button
+                        style={styles.qtyBtn}
+                        onClick={() => decreaseQty(item.id)}
+                      >
                         -
                       </button>
 
                       <span>{item.quantity}</span>
 
-                      <button style={styles.qtyBtn} onClick={() => increaseQty(item.id)}>
+                      <button
+                        style={styles.qtyBtn}
+                        onClick={() => increaseQty(item.id)}
+                      >
                         +
                       </button>
                     </div>
@@ -226,7 +221,10 @@ function Bill() {
                   </td>
 
                   <td>
-                    <button style={styles.removeBtn} onClick={() => removeItem(item.id)}>
+                    <button
+                      style={styles.removeBtn}
+                      onClick={() => removeItem(item.id)}
+                    >
                       ✖
                     </button>
                   </td>
@@ -237,6 +235,7 @@ function Bill() {
         </table>
       </div>
 
+      {/* SUMMARY */}
       <div style={styles.summaryBar}>
         <div style={styles.totalBox}>
           <span style={{ color: "#6b7280" }}>Total Amount</span>
@@ -280,6 +279,7 @@ function Bill() {
   );
 }
 
+// YOUR SAME STYLES (UNCHANGED)
 const styles = {
   page: {
     height: "100vh",
