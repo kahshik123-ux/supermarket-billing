@@ -369,12 +369,15 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
+    padding: "20px",
   },
   modal: {
     background: "white",
     padding: "30px",
     borderRadius: "16px",
     width: "420px",
+     maxHeight: "90vh",      // ✅ ADD THIS
+  overflowY: "auto",
   },
   title: { textAlign: "center", marginBottom: "20px" },
   methodContainer: { display: "flex", gap: "10px", marginBottom: "20px" },
